@@ -1,0 +1,33 @@
+name: "Docker Build and Publish"
+description: "Custom GitHub Action to build and publish Docker images"
+inputs:
+  command:
+    description: "Command to run"
+    required: true
+  DOCKER_IMAGE:
+    description: "Docker image name"
+    required: true
+  DOCKER_TAG:
+    description: "Docker image tag"
+    required: true
+  DOCKERFILE_PATH:
+    description: "Path to the Dockerfile"
+    required: false
+    default: "Dockerfile"
+  CLEANUP:
+    description: "Clean up after build"
+    required: false
+    default: 'true'
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        if [ "${{ inputs.command }}" == "bake" ]; then
+          docker build -f ${{ inputs.DOCKERFILE_PATH }} -t ${{ inputs.DOCKER_IMAGE }}:${{ inputs.DOCKER_TAG }} .
+          docker scan ${{ inputs.DOCKER_IMAGE }}:${{ inputs.DOCKER_TAG }}
+        fi
+        if [ "${{ inputs.command }}" == "publish" ]; then
+          docker tag ${{ inputs.DOCKER_IMAGE }}:${{ inputs.DOCKER_TAG }} ${{ inputs.DOCKER_TAG }}
+          docker push ${{ inputs.DOCKER_TAG }}
+        fi
+      shell: bash

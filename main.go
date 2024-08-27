@@ -4,28 +4,40 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
+
+	"github.com/clouddrove/enigma/modules/docker"
+	"github.com/joho/godotenv"
 )
+
+// loadDockerEnv loads environment variables from the .enigma file located in the docker module.
+// This function sets up necessary environment variables for Docker operations.
+func loadDockerEnv() {
+	err := godotenv.Load(".enigma")
+	if err != nil {
+		log.Fatalf("Error loading .enigma file: %v", err)
+	}
+}
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatalf("Usage: %s <target>", os.Args[0])
+		fmt.Println("Usage: enigma <command>")
+		fmt.Println("Commands: bake, publish")
+		os.Exit(1)
 	}
 
-	target := os.Args[1]
-	if err := runMake(target); err != nil {
-		log.Fatalf("Error running make target '%s': %v", target, err)
-	}
-	fmt.Printf("Make target '%s' completed successfully.\n", target)
-}
+	command := os.Args[1]
 
-func runMake(target string) error {
-	cmd := exec.Command("make", target)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("make command failed: %v", err)
+	switch command {
+	case "bake":
+		loadDockerEnv()
+		docker.BuildDockerImage()
+	case "publish":
+		loadDockerEnv()
+		docker.TagDockerImage()
+		docker.PushDockerImage()
+		
+	default:
+		fmt.Println("Unknown command:", command)
+		fmt.Println("Commands: bake, publish")
 	}
-	return nil
 }
